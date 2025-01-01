@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_file
 import numpy as np
 import cv2
 import os
-import requests
+import gdown
 
 app = Flask(__name__)
 
@@ -21,10 +21,13 @@ PROTOTXT_URL = "https://drive.google.com/uc?id=1hK56NLhwHxI61Zn3rSs7oJAu3KfCa_nI
 def download_file(url, filepath):
     if not os.path.exists(filepath):
         print(f"Downloading {url}...")
-        response = requests.get(url)
-        with open(filepath, "wb") as f:
-            f.write(response.content)
-        print(f"Saved {filepath}")
+        try:
+            gdown.download(url, filepath, quiet=False)
+            print(f"Saved {filepath}")
+        except Exception as e:
+            print(f"Error downloading file: {e}")
+            return False
+    return True
 
 # Ensure model files are available
 os.makedirs(DIR, exist_ok=True)
@@ -35,7 +38,19 @@ download_file(PROTOTXT_URL, PROTOTXT)
 # Load the model
 print("Loading model...")
 net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
-pts = np.load(POINTS)
+if net.empty():
+    print("Error loading the model")
+    exit()
+
+print("Model loaded successfully")
+
+# Load centers for ab channel quantization
+try:
+    pts = np.load(POINTS)
+    print("Points loaded successfully")
+except Exception as e:
+    print(f"Error loading points: {e}")
+    exit()
 
 # Load centers for ab channel quantization used for rebalancing
 class8 = net.getLayerId("class8_ab")
