@@ -13,9 +13,9 @@ POINTS = os.path.join(DIR, "pts_in_hull.npy")
 MODEL = os.path.join(DIR, "colorization_release_v2.caffemodel")
 
 # URLs to download large files dynamically
-MODEL_URL = "https://drive.google.com/file/d/1Q8-iJjv4I7VfqTTr4VjNUpUi8ZtaagFm/view?usp=sharing"
-POINTS_URL = "https://drive.google.com/file/d/1evjjUeX3PN0pz0qX2Q8lZmkFq2khdjsj/view?usp=sharing"
-PROTOTXT_URL = "https://drive.google.com/file/d/1hK56NLhwHxI61Zn3rSs7oJAu3KfCa_nI/view?usp=sharing"
+MODEL_URL = "https://drive.google.com/uc?id=1Q8-iJjv4I7VfqTTr4VjNUpUi8ZtaagFm&export=download"
+POINTS_URL = "https://drive.google.com/uc?id=1evjjUeX3PN0pz0qX2Q8lZmkFq2khdjsj&export=download"
+PROTOTXT_URL = "https://drive.google.com/uc?id=1hK56NLhwHxI61Zn3rSs7oJAu3KfCa_nI&export=download"
 
 # Function to download files if not present
 def download_file(url, filepath):
