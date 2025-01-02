@@ -2,4 +2,3 @@ Flask
 numpy
 opencv-python-headless
 requests
-gdown
