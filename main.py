@@ -3,8 +3,10 @@ import numpy as np
 import cv2
 import os
 import gdown
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # Define directories for models and image paths
 DIR = "./models"
