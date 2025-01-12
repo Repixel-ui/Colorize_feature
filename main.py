@@ -4,6 +4,7 @@ import cv2
 import os
 import gdown
 from flask_cors import CORS
+import gc
 
 app = Flask(__name__)
 CORS(app)
@@ -37,7 +38,7 @@ download_file(MODEL_URL, MODEL)
 download_file(POINTS_URL, POINTS)
 download_file(PROTOTXT_URL, PROTOTXT)
 
-# Load the model
+# Load the model only once at the beginning
 print("Loading model...")
 net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
 if net.empty():
@@ -76,7 +77,7 @@ def colorize():
     if image is None:
         return jsonify({"error": "Unable to load image"}), 400
 
-    # Resize the input image to a smaller size (e.g., 300x300)
+    # Resize the input image to a smaller size to reduce memory consumption
     small_size = (300, 300)
     image_resized = cv2.resize(image, small_size)
 
@@ -109,6 +110,11 @@ def colorize():
 
     # Save the colorized image
     cv2.imwrite(output_path, colorized)
+
+    # Clear memory and remove large variables after use
+    del image, image_resized, scaled, lab, resized, L, ab, colorized
+    gc.collect()
+
     return send_file(output_path, mimetype="image/jpeg")
 
 if __name__ == "__main__":
