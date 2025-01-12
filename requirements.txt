@@ -4,3 +4,4 @@ opencv-python-headless
 requests
 gdown
 flask-cors
+gunicorn
