@@ -1,4 +1,4 @@
-flask
-gradio_client
+Flask
 requests
-gunicorn
+Pillow
+gradio_client
