@@ -1,9 +1,7 @@
 import requests
 import base64
 from flask import Flask, request, jsonify
-from gradio_client import Client, handle_file
-from io import BytesIO
-from PIL import Image
+from gradio_client import Client
 
 app = Flask(__name__)
 
@@ -12,6 +10,13 @@ client = Client("pratyyush/image-colorizer-deoldify_working")
 
 # Imgur API Client ID (replace with your own)
 IMGUR_CLIENT_ID = "8d58d2a8c959a1b"
+
+def fix_base64_padding(base64_string):
+    """Fix Base64 padding issues by adding missing '=' characters."""
+    missing_padding = len(base64_string) % 4
+    if missing_padding:
+        base64_string += "=" * (4 - missing_padding)
+    return base64_string
 
 def upload_to_imgur(image_path):
     """Uploads an image to Imgur and returns the public URL."""
@@ -25,29 +30,19 @@ def upload_to_imgur(image_path):
     else:
         return None
 
-def decode_base64_image(base64_string, output_path="temp_image.jpg"):
-    """Decodes a Base64 string into an image file."""
-    image_data = base64.b64decode(base64_string)
-    image = Image.open(BytesIO(image_data))
-    image.save(output_path)  # Save as a file
-    return output_path
-
 @app.route('/colorize', methods=['POST'])
 def colorize_image():
     try:
-        # Get base64 image from Android
+        # Get Base64 image from Android
         data = request.get_json()
         if not data or "image" not in data:
             return jsonify({"error": "Missing 'image' field"}), 400
 
-        base64_image = data["image"]
-
-        # Decode Base64 to an image file
-        image_path = decode_base64_image(base64_image)
+        base64_image = fix_base64_padding(data["image"])  # Fix Base64 padding
 
         # Send image to Hugging Face API
         result = client.predict(
-            handle_file(image_path),  # Convert image to file object
+            base64_image,  # Sending Base64 directly
             api_name="/predict"
         )
 
