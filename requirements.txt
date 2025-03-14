@@ -1,7 +1,4 @@
-Flask
-numpy
-opencv-python-headless
+flask
+gradio_client
 requests
-gdown
-flask-cors
 gunicorn
