@@ -1,34 +1,37 @@
-from flask import Flask, request, jsonify
 import os
-import requests
-from gradio_client import Client
+from flask import Flask, request, jsonify
+from gradio_client import Client, handle_file
 
 app = Flask(__name__)
 
-# Hugging Face Spaces URL where DeOldify is deployed
-HUGGING_FACE_API_URL = "https://your-deoldify-space.hf.space/"
+# Load Gradio client
+client = Client("pratyyush/image-colorizer-deoldify_working")
 
 @app.route("/", methods=["GET"])
 def home():
-    return "Flask server is running on Render!"
+    return "Flask server is running!"
 
 @app.route("/colorize", methods=["POST"])
-def colorize_image():
-    if "image" not in request.files:
-        return jsonify({"error": "No image uploaded"}), 400
-
-    image = request.files["image"]
-    image_path = "temp.jpg"
-    image.save(image_path)
-
+def colorize():
     try:
-        client = Client(HUGGING_FACE_API_URL)
-        result = client.predict(image_path, api_name="/predict")
+        # Get image URL from request
+        data = request.get_json()
+        image_url = data.get("image_url")
 
-        return jsonify({"colorized_url": result})
+        if not image_url:
+            return jsonify({"error": "Missing image_url"}), 400
 
+        # Send to Gradio API
+        result = client.predict(
+            image_path=handle_file(image_url),
+            api_name="/predict"
+        )
+
+        return jsonify({"colorized_image": result})
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Render needs to use PORT
+    app.run(host="0.0.0.0", port=port, debug=True)
