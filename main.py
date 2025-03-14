@@ -1,7 +1,9 @@
 import requests
 import base64
 from flask import Flask, request, jsonify
-from gradio_client import Client
+from gradio_client import Client, handle_file
+from io import BytesIO
+from PIL import Image
 
 app = Flask(__name__)
 
@@ -23,6 +25,13 @@ def upload_to_imgur(image_path):
     else:
         return None
 
+def decode_base64_image(base64_string, output_path="temp_image.jpg"):
+    """Decodes a Base64 string into an image file."""
+    image_data = base64.b64decode(base64_string)
+    image = Image.open(BytesIO(image_data))
+    image.save(output_path)  # Save as a file
+    return output_path
+
 @app.route('/colorize', methods=['POST'])
 def colorize_image():
     try:
@@ -33,9 +42,12 @@ def colorize_image():
 
         base64_image = data["image"]
 
+        # Decode Base64 to an image file
+        image_path = decode_base64_image(base64_image)
+
         # Send image to Hugging Face API
         result = client.predict(
-            base64_image,  # Sending Base64 directly
+            handle_file(image_path),  # Convert image to file object
             api_name="/predict"
         )
 
