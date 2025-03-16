@@ -1,14 +1,15 @@
 import requests
 import base64
+import os
 from flask import Flask, request, jsonify
 from gradio_client import Client
 
 app = Flask(__name__)
 
-# Hugging Face Gradio API Client
+# Hugging Face DeOldify Model API
 client = Client("pratyyush/image-colorizer-deoldify_working")
 
-# Imgur API Client ID (replace with your own)
+# Imgur API Client ID (Replace with your own Client ID)
 IMGUR_CLIENT_ID = "8d58d2a8c959a1b"
 
 def fix_base64_padding(base64_string):
@@ -17,6 +18,18 @@ def fix_base64_padding(base64_string):
     if missing_padding:
         base64_string += "=" * (4 - missing_padding)
     return base64_string
+
+def save_base64_image(base64_str):
+    """Decode and save Base64 image to a temporary file."""
+    try:
+        image_data = base64.b64decode(base64_str)
+        temp_filename = "input_image.jpg"
+        with open(temp_filename, "wb") as f:
+            f.write(image_data)
+        return temp_filename
+    except Exception as e:
+        print("Error decoding Base64:", str(e))
+        return None
 
 def upload_to_imgur(image_path):
     """Uploads an image to Imgur and returns the public URL."""
@@ -33,27 +46,27 @@ def upload_to_imgur(image_path):
 @app.route('/colorize', methods=['POST'])
 def colorize_image():
     try:
-        # Get Base64 image from Android
+        # Get Base64 image from request
         data = request.get_json()
         if not data or "image" not in data:
             return jsonify({"error": "Missing 'image' field"}), 400
 
-        base64_image = fix_base64_padding(data["image"])  # Fix Base64 padding
+        base64_image = fix_base64_padding(data["image"])  # Fix padding
+        image_path = save_base64_image(base64_image)  # Save locally
+
+        if not image_path:
+            return jsonify({"error": "Failed to process image"}), 500
 
         # Send image to Hugging Face API
         result = client.predict(
-            base64_image,  # Sending Base64 directly
+            image_path,  # Send local image path
             api_name="/predict"
         )
 
-        # Extract local path of the colorized image
-        if isinstance(result, str):
-            colorized_image_path = result
-        else:
-            colorized_image_path = result.get("colorized_image", "")
+        if not isinstance(result, str):
+            return jsonify({"error": "Invalid response from Hugging Face"}), 500
 
-        if not colorized_image_path:
-            return jsonify({"error": "No output image received from Hugging Face"}), 500
+        colorized_image_path = result  # Colorized image path
 
         # Upload colorized image to Imgur
         imgur_url = upload_to_imgur(colorized_image_path)
