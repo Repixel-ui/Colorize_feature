@@ -24,29 +24,39 @@ def save_base64_image(base64_str):
     try:
         image_data = base64.b64decode(base64_str)
         temp_filename = "input_image.jpg"
+
         with open(temp_filename, "wb") as f:
             f.write(image_data)
+
+        print(f"✅ Image saved locally: {temp_filename}")
         return temp_filename
     except Exception as e:
-        print("Error decoding Base64:", str(e))
+        print("❌ Error decoding Base64:", str(e))
         return None
 
 def upload_to_imgur(image_path):
     """Uploads an image to Imgur and returns the public URL."""
-    with open(image_path, "rb") as image_file:
-        img_data = {"image": image_file}
-        headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
-        response = requests.post("https://api.imgur.com/3/image", headers=headers, files=img_data)
+    try:
+        with open(image_path, "rb") as image_file:
+            img_data = {"image": image_file}
+            headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
+            response = requests.post("https://api.imgur.com/3/image", headers=headers, files=img_data)
 
-    if response.status_code == 200:
-        return response.json()["data"]["link"]
-    else:
+        if response.status_code == 200:
+            imgur_url = response.json()["data"]["link"]
+            print(f"✅ Image uploaded to Imgur: {imgur_url}")
+            return imgur_url
+        else:
+            print(f"❌ Imgur upload failed: {response.json()}")
+            return None
+    except Exception as e:
+        print("❌ Error uploading to Imgur:", str(e))
         return None
 
 @app.route('/colorize', methods=['POST'])
 def colorize_image():
     try:
-        # Get Base64 image from request
+        # Step 1: Get Base64 image from request
         data = request.get_json()
         if not data or "image" not in data:
             return jsonify({"error": "Missing 'image' field"}), 400
@@ -57,25 +67,32 @@ def colorize_image():
         if not image_path:
             return jsonify({"error": "Failed to process image"}), 500
 
-        # Send image to Hugging Face API
+        # Step 2: Send image to Hugging Face API
+        print("🔄 Sending image to Hugging Face for colorization...")
         result = client.predict(
             image_path,  # Send local image path
             api_name="/predict"
         )
 
-        if not isinstance(result, str):
+        if not isinstance(result, str) or not os.path.exists(result):
+            print(f"❌ Invalid Hugging Face response: {result}")
             return jsonify({"error": "Invalid response from Hugging Face"}), 500
 
         colorized_image_path = result  # Colorized image path
+        print(f"✅ Colorized image saved: {colorized_image_path}")
 
-        # Upload colorized image to Imgur
+        # Step 3: Upload colorized image to Imgur
+        print("🔄 Uploading colorized image to Imgur...")
         imgur_url = upload_to_imgur(colorized_image_path)
+
         if not imgur_url:
+            print("❌ Failed to upload to Imgur")
             return jsonify({"error": "Failed to upload to Imgur"}), 500
 
         return jsonify({"colorized_image_url": imgur_url})
 
     except Exception as e:
+        print(f"❌ Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
