@@ -91,12 +91,11 @@ def colorize_image():
 
         return jsonify({"colorized_image_url": imgur_url})
 
-except Exception as e:
-    import traceback
-    error_message = traceback.format_exc()
-    print(f"❌ Full Error:\n{error_message}")  # Print full error details
-    return jsonify({"error": str(e)}), 500
-
+    except Exception as e:
+        import traceback
+        error_message = traceback.format_exc()
+        print(f"❌ Full Error:\n{error_message}")  # Print full error details
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=10000, debug=True)
