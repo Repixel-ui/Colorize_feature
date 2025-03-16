@@ -67,21 +67,37 @@ def colorize_image():
         if not image_path:
             return jsonify({"error": "Failed to process image"}), 500
 
-        # Step 2: Send image to Hugging Face API
+        # Step 2: Upload input image to Imgur first (OPTIONAL, if needed)
+        # Comment this out if Hugging Face supports direct file input
+        # input_imgur_url = upload_to_imgur(image_path)
+        # if not input_imgur_url:
+        #     print("❌ Failed to upload input image to Imgur")
+        #     return jsonify({"error": "Failed to upload input image"}), 500
+
+        # Step 3: Send image to Hugging Face API
         print("🔄 Sending image to Hugging Face for colorization...")
         result = client.predict(
-            image_path,  # Send local image path
+            image_path,  # Send local image path (or input_imgur_url if needed)
             api_name="/predict"
         )
+
+        # 🛑 DEBUG: Print the Hugging Face response
+        print(f"🛑 Hugging Face Model Response: {result}")
 
         if not isinstance(result, str) or not os.path.exists(result):
             print(f"❌ Invalid Hugging Face response: {result}")
             return jsonify({"error": "Invalid response from Hugging Face"}), 500
 
         colorized_image_path = result  # Colorized image path
+
+        # Step 4: Check if the colorized image exists
+        if not os.path.exists(colorized_image_path):
+            print(f"❌ Colorized image not found at {colorized_image_path}")
+            return jsonify({"error": "Colorized image not found"}), 500
+
         print(f"✅ Colorized image saved: {colorized_image_path}")
 
-        # Step 3: Upload colorized image to Imgur
+        # Step 5: Upload colorized image to Imgur
         print("🔄 Uploading colorized image to Imgur...")
         imgur_url = upload_to_imgur(colorized_image_path)
 
